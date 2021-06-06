@@ -15,6 +15,55 @@ from moviepy.editor import *
 import subprocess
 #import ffmpeg
 
+def pyramid_pass_sum(vx_in,vy_in,start,end):
+    # find index of start point and end point
+    index_start = np.searchsorted(vx_in,start)
+    index_end = np.searchsorted(vx_in,end)
+    # finde index of mid point
+    index_mid = int(0.5*(index_start+index_end))
+    # restart mask for filter, all zero
+    mask = np.zeros_like(vy_in)
+    mask[index_mid]= 1 #mid filter is 1
+    
+    # left side of filter linar function, start in 0 end in 1
+    step =2/(index_end-index_start)   
+    for index in np.arange(index_start,index_mid):
+        mask[index]= mask[index-1]+step
+    # rifht side of filter linar function, start in 1 end in 0   
+    for index in np.arange(index_mid,index_end):
+        mask[index]= mask[index-1]-step
+    
+    # inner product of mask with value
+    scalar = np.inner(mask,vy_in)
+    return scalar
+
+def mel_filter(vx_in,vy_in,number_filter = 26):
+    # define mel filter function and oposite function
+    mel_f = lambda x:1125*np.log(1+x/700)
+    mel_o_f = lambda x:700*(np.exp(x/1125)-1)
+    # transpose array by mel 
+    vx_log = mel_f(vx_in)
+    # divaide space by the new log base
+    points_log = np.linspace(0,vx_log[-1],number_filter+1)
+    points = end_poits = mel_o_f(points_log)
+    
+    # define start point of evry filter
+    start_poits = points[:-1]
+    # define end point of evry filter
+    end_poits = points[1:]
+    
+    list_out = []
+
+    for start,end in zip(start_poits, end_poits):
+        list_out.append( pyramid_pass_sum(vx_in,vy_in,start,end)  )
+    
+    
+    v_out = np.array(list_out)
+    return v_out
+
+
+
+
 main_phath =r'D:\github\video_to_sound\video_to_sound'
 
 phath_for_url = r'\data\url_youtube.txt'
@@ -47,30 +96,55 @@ for file_name in video_raw_list_name:
     
     # Calculate RMS
     print(sound_wav_phath)
-    (sig, rate) = librosa.load(sound_wav_phath, sr=22050)
+    # parameters for converting wav to vector
+    sampling_rate = 32768  # [Hz]  2^15
+    
+    
+    (sig, rate) = librosa.load(sound_wav_phath, sr=sampling_rate)
     len_in_sec = librosa.get_duration(y=sig, sr=rate)
-    print('len_in_sec',len_in_sec)
+    print('----len_in_sec:',len_in_sec)
+    
     sig = (sig*32767).astype(int)
     sig = sig/32767.0
-    print(type(sig),type(rate))
-    print(sig.shape,rate)
+    
+    print('---sig:')
+    print('max',max(sig),'min:',min(sig))
+    print(sig.shape,type(sig))
+    
+    print('---rata:',rate,type(rate))
+    
+    # Parameters for STFT - Short-Time Fourier Transform
+    window_length = 0.025 #[sec] ==> number of sampel in window: sampling_rate*window_length
+    window_step = 0.01    #[sec] ==> number of sampel in step: sampling_rate*window_step
+    NFFT = 1025 # number of samples in window f(n)=1+2^n
+    
     d = librosa.stft(sig)  # STFT of y
+    print('---d:')
+    print('max',np.max(d),'min:',np.min(d))
     print(type(d),d.shape)
+    
     s_db = librosa.amplitude_to_db(np.abs(d), ref=np.max)
+    print('---s_db:')
+    print('max',np.max(s_db),'min:',np.min(s_db))
     print(type(s_db),s_db.shape)
     counter = 0
     f_0 = 0
     for f_temp in s_db.T:
         
-        frequency = np.arange(len(f_temp))
+        frequency = np.linspace(0,int(0.5*rate),num = len(f_temp))
+        fre = np.fft.rfftfreq(len(f_temp),d=1/rate)
+        y = np.fft.rfft(f_temp)
         # fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)       
-        f_temp = f_temp+80
+        #f_temp = f_temp
         # ax1.bar(frequency,f_temp)
         # ax2.bar(frequency,f_temp-f_0)
         # ax1.set_title(counter)
+        #print(frequency.shape,f_temp.shape)
         fig,ax = plt.subplots(1, 1, sharey=True)
-        ax.bar(frequency,f_temp-f_0)
+        
+        ax.bar(frequency,f_temp)#-f_0)
         ax.set_title(counter)
+        
         plt.pause(0.05)        
         counter += 1
         f_0 = f_temp
