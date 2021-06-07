@@ -54,21 +54,51 @@ def mel_filter(vx_in,vy_in,number_filter = 26):
     v_out = np.array(list_out)
     return v_out
 
+def cut_sig_to_win(sig,win_size,step):
+    new_len =1+ (len(sig)-win_size)/step
+    while new_len>(new_len//1):
+        sig = np.append(sig,[0]) #pad sig
+        new_len =1+ (len(sig)-win_size)/step
+        
+    out=[]
+    
+    for index in range(0,len(sig)-win_size+step,step):
+        out.append(sig[index:(index+win_size)])
+    out = np.array(out)
+    
+    return out
+
+def cut_sig_to_win2(sig,win_size,step):
+    new_len =1+ (len(sig)-win_size)/step
+    while new_len>(new_len//1):
+        sig = np.append(sig,[0]) #pad sig
+        new_len =1+ (len(sig)-win_size)/step
+        
+    out=[]
+    
+    for index in range(0,len(sig)-win_size+step,step):
+        out.append(sig[index:(index+win_size)])
+    out = np.array(out)
+    
+    return out
+
+
 
 # First create some toy data:
-x = np.linspace(0, 10, 400)
-f = lambda t:(t*t)-5*t
+x = np.linspace(0, 10, 11)
+f = lambda t:t
 y = f(x)
 # start = 2*np.pi 
 # end = 4*np.pi
 # print(pirmid_integral(x,y,start,end))
-
+out = cut_sig_to_win(y,3,1)
+print(out)
 # start = 0
 # end = 2*np.pi
 # print(pirmid_integral(x,y,start,end))
 ans = mel_filter(x,y,number_filter = 200)
-print(ans[-1])
-print(y[-1])
+#print(ans[-1])
+#print(y[-1])
 # # Create just a figure and only one subplot
 # fig, ax = plt.subplots()
 # ax.plot(x, y)

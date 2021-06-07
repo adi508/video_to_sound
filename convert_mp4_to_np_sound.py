@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon May 24 10:57:58 2021
+Created on Mon Jun  7 10:28:23 2021
 
 @author: Adi
 """
@@ -61,6 +61,23 @@ def mel_filter(vx_in,vy_in,number_filter = 26):
     v_out = np.array(list_out)
     return v_out
 
+def cut_sig_to_win(sig,win_size,step):
+    # cut signals to windowes
+    # f([1,2,3,4],2,1) = [[1,2],[2,3],[3,4]]
+    # f([1,2,3,4,5,6],3,2) = [[1,2,3],[3,4,5],[5,6,0]]
+    new_len =1+ (len(sig)-win_size)/step
+    while new_len>(new_len//1):
+        sig = np.append(sig,[0]) #pad sig
+        new_len =1+ (len(sig)-win_size)/step
+        
+    out=[]
+    
+    for index in range(0,len(sig)-win_size+step,step):
+        out.append(sig[index:(index+win_size)])
+    out = np.array(out)
+    
+    return out.T
+
 def fft_np(sig,sr):
     n = len(sig)
     freq = np.fft.rfftfreq(n,d=1/rate)
@@ -95,7 +112,6 @@ for file_name in video_raw_list_name:
     audio_clip.write_audiofile(sound_mp3_phath)
     
     
-    #subprocess.call(['ffmpeg', '-i', sound_mp3_phath,sound_wav_phath])
     
     # Calculate RMS
     print(sound_wav_phath)
@@ -107,52 +123,21 @@ for file_name in video_raw_list_name:
     len_in_sec = librosa.get_duration(y=sig, sr=rate)
     print('----len_in_sec:',len_in_sec)
     
+    #   clean signal
     sig = (sig*32767).astype(int)
     sig = sig/32767.0
     
     print('---sig:')
-    print('max',max(sig),'min:',min(sig))
-    print(sig.shape,type(sig))
+    print('max',max(sig),'min:',min(sig),'shape:',sig.shape,type(sig))
     
-    print('---rata:',rate,type(rate))
+    print('---rata:',rate,type(rate),'sampel in minute')
     
     # Parameters for STFT - Short-Time Fourier Transform
     window_length = 0.025 #[sec] ==> number of sampel in window: sampling_rate*window_length
     window_step = 0.01    #[sec] ==> number of sampel in step: sampling_rate*window_step
     NFFT = 1025 # number of samples in window f(n)=1+2^n
     
-    d = librosa.stft(sig)  # STFT of y
-    print('---d:')
-    print('max',np.max(d),'min:',np.min(d))
-    print(type(d),d.shape)
     
-    s_db = librosa.amplitude_to_db(np.abs(d), ref=np.max)
-    print('---s_db:')
-    print('max',np.max(s_db),'min:',np.min(s_db))
-    print(type(s_db),s_db.shape)
-    counter = 0
-    f_0 = 0
-    for f_temp in s_db.T:
-        
-        frequency = np.linspace(0,int(0.5*rate),num = len(f_temp))
-        fre = np.fft.rfftfreq(len(f_temp),d=1/rate)
-        y = np.fft.rfft(f_temp)
-        # fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)       
-        #f_temp = f_temp
-        # ax1.bar(frequency,f_temp)
-        # ax2.bar(frequency,f_temp-f_0)
-        # ax1.set_title(counter)
-        #print(frequency.shape,f_temp.shape)
-        
-        fig,ax = plt.subplots(1, 1, sharey=True)
-        ax.bar(frequency,f_temp)#-f_0)
-        ax.set_title(counter)
-        
-        plt.pause(0.01)        
-        counter += 1
-        f_0 = f_temp
-        if  counter>100:
-            break
         
 
     
@@ -195,4 +180,3 @@ for file_name in video_raw_list_name:
     # rms = librosa.feature.rms(y=y, hop_length=int(sr*rms_window))
     # rms_db = librosa.core.amplitude_to_db(rms, ref=0.0)
     # print(list(rms_db[0]),rms_db.shape,type(rms_db))
-
