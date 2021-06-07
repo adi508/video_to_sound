@@ -8,7 +8,9 @@ import cv2
 import numpy as np
 import os
 import librosa
-from scipy.io import wavfile
+
+from scipy.fft import  dct
+
 import matplotlib.pyplot as plt
 
 from moviepy.editor import *
@@ -148,14 +150,17 @@ for file_name in video_raw_list_name:
     win_step_size = int(window_step*len(sig)/len_in_sec) # [frame]
     
     # transfurm singal to signal per time window
-    sig_per_win = cut_sig_to_win(sig,win_size,win_step_size)
+    sig_per_win = np.abs(cut_sig_to_win(sig,win_size,win_step_size))
     
     
     # calculate fft per time window
     counter = 0
     for d_sig in sig_per_win:
         out,freq = fft_np(d_sig,rate)
-        out_mel = mel_filter(freq,out,number_filter = 52)
+        out_db = 20*np.log10(out)
+        cept = dct(out_db)
+        x_cept = np.arange(len(cept))
+        out_mel = mel_filter(x_cept,cept,number_filter = 13)
         fig,ax = plt.subplots(1, 1, sharey=True)
         
         x_mel = np.arange(len(out_mel))
