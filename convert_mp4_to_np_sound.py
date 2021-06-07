@@ -65,23 +65,29 @@ def cut_sig_to_win(sig,win_size,step):
     # cut signals to windowes
     # f([1,2,3,4],2,1) = [[1,2],[2,3],[3,4]]
     # f([1,2,3,4,5,6],3,2) = [[1,2,3],[3,4,5],[5,6,0]]
+    
+    # pad signal with zero if needed
     new_len =1+ (len(sig)-win_size)/step
     while new_len>(new_len//1):
         sig = np.append(sig,[0]) #pad sig
         new_len =1+ (len(sig)-win_size)/step
-        
-    out=[]
     
-    for index in range(0,len(sig)-win_size+step,step):
-        out.append(sig[index:(index+win_size)])
-    out = np.array(out)
+    # convert to int - float cant be index
+    new_len = int(new_len)
+    # restsrt out matrix
+    out=np.zeros((win_size,new_len))
+    
+    for index in range(win_size):
+        temp_index = np.arange(index,index+(new_len)*step,step)
+        out[index] =  sig[temp_index]
     
     return out.T
+
 
 def fft_np(sig,sr):
     n = len(sig)
     freq = np.fft.rfftfreq(n,d=1/rate)
-    out = np.abs(np.fft.rfft(y)/n)
+    out = np.abs(np.fft.rfft(sig)/n)
     return out,freq    
 
 main_phath =r'D:\github\video_to_sound\video_to_sound'
@@ -130,16 +136,39 @@ for file_name in video_raw_list_name:
     print('---sig:')
     print('max',max(sig),'min:',min(sig),'shape:',sig.shape,type(sig))
     
-    print('---rata:',rate,type(rate),'sampel in minute')
+    print('---rata:',rate,type(rate),'sampel in sec')
     
     # Parameters for STFT - Short-Time Fourier Transform
-    window_length = 0.025 #[sec] ==> number of sampel in window: sampling_rate*window_length
-    window_step = 0.01    #[sec] ==> number of sampel in step: sampling_rate*window_step
+    window_length = 0.1 #[sec] ==> number of sampel in window: sampling_rate*window_length
+    window_step = 0.025    #[sec] ==> number of sampel in step: sampling_rate*window_step
     NFFT = 1025 # number of samples in window f(n)=1+2^n
     
+    # calculate number od sampele per win and step 
+    win_size = int(window_length*len(sig)/len_in_sec)  # [frame]
+    win_step_size = int(window_step*len(sig)/len_in_sec) # [frame]
     
+    # transfurm singal to signal per time window
+    sig_per_win = cut_sig_to_win(sig,win_size,win_step_size)
+    
+    
+    # calculate fft per time window
+    counter = 0
+    for d_sig in sig_per_win:
+        out,freq = fft_np(d_sig,rate)
+        out_mel = mel_filter(freq,out,number_filter = 52)
+        fig,ax = plt.subplots(1, 1, sharey=True)
         
-
+        x_mel = np.arange(len(out_mel))
+        ax.bar(x_mel,out_mel)#-f_0)
+        ax.set_title(counter)
+        
+        plt.pause(0.01)        
+        counter += 1
+        
+        if  counter>100:
+            break
+        
+        #print(out.shape,freq.shape)
     
    
     

@@ -73,25 +73,33 @@ def cut_sig_to_win2(sig,win_size,step):
     while new_len>(new_len//1):
         sig = np.append(sig,[0]) #pad sig
         new_len =1+ (len(sig)-win_size)/step
-        
-    out=[]
     
-    for index in range(0,len(sig)-win_size+step,step):
-        out.append(sig[index:(index+win_size)])
-    out = np.array(out)
+    new_len = int(new_len)    
+    out=np.zeros((win_size,new_len))
+    #print(out.T)
+    #print(out.T.shape)
+    for index in range(win_size):
+        temp_index = np.arange(index,index+(new_len)*step,step)
+        #print(index,sig[temp_index],temp_index)
+        #print(out[index])
+        out[index] =  sig[temp_index]
     
+    out = out.T
     return out
 
 
 
 # First create some toy data:
-x = np.linspace(0, 10, 11)
+x = np.linspace(5, 12, 13-5)
 f = lambda t:t
 y = f(x)
 # start = 2*np.pi 
 # end = 4*np.pi
 # print(pirmid_integral(x,y,start,end))
-out = cut_sig_to_win(y,3,1)
+out = cut_sig_to_win(y,6,2)
+print(out)
+print('new')
+out = cut_sig_to_win2(y,7,4)
 print(out)
 # start = 0
 # end = 2*np.pi
