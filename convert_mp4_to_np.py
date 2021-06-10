@@ -14,13 +14,13 @@ import re
 from moviepy.editor import *
 import subprocess
 import pandas as pd
-#import ffmpeg
+# import ffmpeg
 
 def fix_string(st_in):
     # only lower case
     st0 = st_in.lower() #casefold() ?
     st1 = re.sub("[^0-9a-zA-Z,' ']", "",st0)
-    no_good_string =[' hd','hd ','official','video']
+    no_good_string =[' hd','hd ','official music video','official','video']
     for bad in no_good_string:
         st1 =st1.replace(bad,'')
     st2 =st1
@@ -102,10 +102,11 @@ def fft_np(sig,sr):
 def restart_index_data(path):
     columns_name=['name',
                   'old_name',
-                  'len',
-                  'frane_time', #[sec]
-                  'number of farme',
+                  'len[sec]',
                   'number of bit',
+                  'bit for sec',
+                  'number of farme',
+                  'frame for sec',
                   'url',
                   'path_mp4',
                   'path_wav',
@@ -128,147 +129,152 @@ def new_data(name,old_name,path):
 
 main_phath =r'D:\github\video_to_sound\video_to_sound'
 
+# path for file
 phath_for_url = main_phath+r'\data\url_youtube.txt'
+phath_to_index_data = main_phath+r'\data\index_all_data.csv'
+
+# path for folder
 phath_for_mp4_video = main_phath+r'\data\raw_video'
 phath_for_mp3_sound = main_phath+r'\data\mp3_sound'
 phath_for_wav_sound = main_phath+r'\data\wav_sound'
 phath_for_np_sound = main_phath+r'\data\np_sound'
 phath_for_np_video = main_phath+r'\data\np_video'
-phath_for_saving_video_as_numpy = main_phath+r'\data\matrix_video'
-phath_to_index_data = main_phath+r'\data\index_all_data.csv'
+
+# parameter for procesing
+dim =(128,72)  # dim of frame
 
 
-restart_index_data(phath_to_index_data)
+#restart_index_data(phath_to_index_data)
 video_raw_list_name = os.listdir(phath_for_mp4_video)
 for file_name in video_raw_list_name:
+    # clean song name from char 'Brit go H;Ome'=> 'brit_go_home'
     file_name_r = fix_string(file_name[:-4])
-    
-    flag_name,df = new_data(file_name_r,file_name[:-4],phath_to_index_data)
-    if flag_name:
+    print('-------new song:',file_name_r)
+    # load index_data (pandas datafram) try to add new song name
+    flag_name,data_index = new_data(file_name_r,file_name[:-4],phath_to_index_data)
+    if flag_name: #if name in data, move to next song
+        print('song in data, move to next song')
         continue
-    # step 1  convert sound to np
-    file_in_phath =phath_for_mp4_video+'\\'+file_name
-    sound_mp3_phath =  phath_for_mp3_sound+'\\'+file_name_r+'.mp3'
-    sound_wav_phath =  phath_for_wav_sound+'\\'+file_name_r+'.wav'
-    sound_np_phath =  phath_for_np_sound+'\\'+file_name_r+'.np'
-    print('3')
+    
+    # all name+path of new file
+    file_in_phath = phath_for_mp4_video+'\\'+file_name
+    sound_mp3_phath = phath_for_mp3_sound+'\\'+file_name_r+'.mp3'
+    sound_wav_phath = phath_for_wav_sound+'\\'+file_name_r+'.wav'
+    sound_np_phath = phath_for_np_sound+'\\'+file_name_r+'.npy'
+    video_np_phath = phath_for_np_video+'\\'+file_name_r+'.npy'
+    
+    # test if mp3 in folder
     if (file_name_r+'.mp3') not in os.listdir(phath_for_mp3_sound):
+        print('no mp3 file')
         video_clip = VideoFileClip(file_in_phath)
         audio_clip = video_clip.audio
         audio_clip.write_audiofile(sound_mp3_phath)
-    print('2')
+    
+    # test if wav in folder
     if (file_name_r+'.wav') not in os.listdir(phath_for_wav_sound):
-        subprocess.call(['ffmpeg', '-i', sound_mp3_phath,sound_wav_phath])
-    
-    df.at[file_name_r,'path_wav'] = sound_wav_phath
-    df.at[file_name_r,'path_mp4'] = file_in_phath
-    df.at[file_name_r,'url'] = '???'
-    
-                 
-              
-  
-    # Calculate RMS
-    print(sound_wav_phath)
+        print('no wav file')
+        temp_proc = subprocess.call(['ffmpeg', '-i', sound_mp3_phath,sound_wav_phath],shell=True)
+        
+        #print(type(temp_proc))
+        #temp_proc.kill()
+        
     # parameters for converting wav to vector
     sampling_rate = 32768  # [Hz]  2^15
     
     
+    # test if np sound in folder
+    if (file_name_r+'.npy') not in os.listdir(phath_for_np_sound):
+        print('no NP sound file in folder')
+        (sig, rate) = librosa.load(sound_wav_phath, sr=sampling_rate)
+        np.save(sound_np_phath,  sig)
+        
+    else:
+        print('NP sound file exsist')
+        rate = sampling_rate
+        sig = np.load(sound_np_phath)
     
-    (sig, rate) = librosa.load(sound_wav_phath, sr=sampling_rate)
+    data_index.at[file_name_r,'path_wav'] = sound_wav_phath
+    data_index.at[file_name_r,'path_mp4'] = file_in_phath   
+    data_index.at[file_name_r,'number of bit'] = len(sig)
+    data_index.at[file_name_r,'len[sec]'] = librosa.get_duration(y=sig, sr=rate)
+    data_index.at[file_name_r,'bit for sec'] = len(sig)/data_index.at[file_name_r,'len[sec]']
+    data_index.at[file_name_r,'path_sound_np'] = sound_np_phath
+
+    data_index.to_csv(phath_to_index_data)
     
- 
-    len_in_sec = librosa.get_duration(y=sig, sr=rate)
-    
-    df.at[file_name_r,'len'] = len_in_sec
-    df.to_csv(phath_to_index_data)
-    print('----len_in_sec:',len_in_sec)
+    # plot signal [amp/bit]
     max_sig = np.max(sig)
     min_sig = np.min(sig)
     sig = (2*sig-min_sig-max_sig)/(max_sig-min_sig)
     sig = (sig*32767).astype(int)
     sig = sig/32767.0
+    sig_s = sig [0:int(0.0051*len(sig))]
+    data = np.array([np.arange(len(sig_s)),sig_s]).T
+    df_temp = pd.DataFrame(data,columns=['bit', 'amp'])
+    ax1 = df_temp.plot.scatter(x='bit', y='amp', c='DarkBlue')
     
-    data = np.array([np.arange(len(sig)),sig]).T
-    df_temp = pd.DataFrame(data,columns=['length', 'width'])
-    ax1 = df_temp.plot.scatter(x='length', y='width', c='DarkBlue')
-    
-    print('---sig:')
-    print('max',max(sig),'min:',min(sig))
-    print(sig.shape,type(sig))
-    
-    print('---rata:',rate,type(rate))
-    
-    # Parameters for STFT - Short-Time Fourier Transform
-    window_length = 0.025 #[sec] ==> number of sampel in window: sampling_rate*window_length
-    window_step = 0.01    #[sec] ==> number of sampel in step: sampling_rate*window_step
-    NFFT = 1025 # number of samples in window f(n)=1+2^n
-    
-    d = librosa.stft(sig)  # STFT of y
-    print('---d:')
-    print('max',np.max(d),'min:',np.min(d))
-    print(type(d),d.shape)
-    
-    s_db = librosa.amplitude_to_db(np.abs(d), ref=np.max)
-    print('---s_db:')
-    print('max',np.max(s_db),'min:',np.min(s_db))
-    print(type(s_db),s_db.shape)
-    counter = 0
-    f_0 = 0
-    # for f_temp in s_db.T:
+    # test if np video in folder
+    if (file_name_r+'.npy') not in os.listdir(phath_for_np_video):
+        print('no NP video file in folder') 
+        # convert mp4 to 3D numpy array [w,h,t] in black and white
+        cap = cv2.VideoCapture(file_in_phath)
+        counter = 1  #number of farme convert to 3D numpy array
+        ret,frame = cap.read()
         
-    #     frequency = np.linspace(0,int(0.5*rate),num = len(f_temp))
-    #     fre = np.fft.rfftfreq(len(f_temp),d=1/rate)
-    #     y = np.fft.rfft(f_temp)
-    #     # fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)       
-    #     #f_temp = f_temp
-    #     # ax1.bar(frequency,f_temp)
-    #     # ax2.bar(frequency,f_temp-f_0)
-    #     # ax1.set_title(counter)
-    #     #print(frequency.shape,f_temp.shape)
+        if not ret:
+            print('error in file- cant open with opencv')
+            print('erorr reading cap- move to next url')
+            # continue to next file
+            continue
         
-    #     #fig,ax = plt.subplots(1, 1, sharey=True)
-    #     #ax.bar(frequency,f_temp)#-f_0)
-    #     ax.set_title(counter)
+        # restart 3d numpy array
+        grayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        resized = cv2.resize(grayFrame, dim, interpolation = cv2.INTER_AREA)
+        numpy_video = np.expand_dims(resized,axis=0) # axis=0 for number of frame
         
-    #     plt.pause(0.01)        
-    #     counter += 1
-    #     f_0 = f_temp
-    #     if  counter>100:
-    #         break
-        
+        # loop over cap, append frame to 3D array
+        while(True):
+            ret,frame = cap.read() 
+            if ret :   #and  counter<100 :
+                counter += 1
+                # covert frame to gray scale and down-size  it
+                grayframe0 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                grayframe1 = cv2.resize(grayframe0, dim, interpolation = cv2.INTER_AREA)
+                # add dim in the first axis so it can be append to all frames in one 3d array
+                grayframe = np.expand_dims(grayframe1,axis=0)
+                # append frame to 3D array
+                numpy_video = np.append(numpy_video,grayframe,axis=0)
+                
+                # showe frame in win
+                cv2.imshow('frame', grayframe1)
+                if cv2.waitKey(1) == ord('q'):
+                    cap.release()
+                    cv2.destroyAllWindows()
+                    break
+            
+            else:  # end of video/cap
+                file_name = phath_for_np_video +'\\'+file_name_r+'.npy'
+                np.save(file_name,  numpy_video)
+                cap.release()
+                cv2.destroyAllWindows()
+                break
 
+        np.save(video_np_phath,  numpy_video)    
+    else:
+        print('np sound file exsist')
+        numpy_video = np.load(video_np_phath)
+    
+    data_index.at[file_name_r,'path_video_np'] = video_np_phath
+    data_index.at[file_name_r,'number of farme'] = numpy_video.shape[0]
+    data_index.at[file_name_r,'frame for sec'] = np.ceil(
+        data_index.at[file_name_r,'number of farme']/data_index.at[file_name_r,'len[sec]']).astype(int)
+    data_index.to_csv(phath_to_index_data)   
+    
+
+    
     
    
     
-    
-    # counter = 0 
-    # ret,frame = cap.read()
-    # grayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # numpy_video = np.expand_dims(grayFrame,axis=-1)
-    # while(True):   
-    #     # reading from frame 
-    #     ret,frame = cap.read() 
-    #     grayframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    #     grayframe = np.expand_dims(grayFrame,axis=-1)
-    #     print('in loop',ret)
-
-    #     if ret: 
-    #         # if video is still left continue creating images 
-    #         name = './data/frame'+str(index)+'_' + str(counter) + '.jpg'
-    #         #print ('Creating...' + name) 
-    #         print('frame',type( grayframe), grayframe.shape)
-    #         # writing the extracted images 
-    #         numpy_video = np.append(numpy_video,grayframe,axis=-1)
-    #         print(numpy_video.shape,type(numpy_video))
-    #         #cv2.imwrite(name,  grayFrame) 
-
-    #         # increasing counter so that it will 
-    #         # show how many frames are created 
-    #         counter += 1
-    #         if  counter>30:
-    #             break
-    #     else: 
-    #         break
 
 # Release all space and windows once done 
 

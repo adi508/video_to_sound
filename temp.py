@@ -8,6 +8,7 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 import pandas as pd
+import subprocess
 
 def pyramid_pass_sum(vx_in,vy_in,start,end):
     # find index of start point and end point
@@ -143,6 +144,7 @@ st_in = 'ברי סחרוף - רעש לבן'#'ADG_ KI  IJOE o12pHLive Official'
 print(st_in)
 print(fix_string(st_in)+'!')
 
+subprocess.run('dir',shell=True)
 
 path_index_data = r'D:\github\video_to_sound\video_to_sound\data\index_all_data.csv'
 #restart_index_data(path_index_data)
