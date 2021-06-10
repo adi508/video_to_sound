@@ -99,7 +99,7 @@ phath_for_mp4_video = r'\data\raw_video'
 phath_for_mp3_sound = r'\data\mp3_sound'
 phath_for_wav_sound = r'\data\wav_sound'
 phath_for_np_sound = r'\data\np_sound'
-phath_for_np_video = r'\data\np_video'
+phath_for_np_video = r'\data\\matrix_video'
 
 
 
@@ -121,7 +121,7 @@ for file_name in video_raw_list_name:
     
     
     
-    # Calculate RMS
+    
     print(sound_wav_phath)
     # parameters for converting wav to vector
     sampling_rate = 32768  # [Hz]  2^15
