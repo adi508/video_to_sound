@@ -5,8 +5,9 @@ Created on Tue May 25 13:42:37 2021
 @author: Adi
 """
 import numpy as np
-
+import re
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def pyramid_pass_sum(vx_in,vy_in,start,end):
     # find index of start point and end point
@@ -87,8 +88,65 @@ def cut_sig_to_win2(sig,win_size,step):
     out = out.T
     return out
 
+def fix_string(st_in):
+    # only lower case
+    st0 = st_in.lower() #casefold() ?
+    st1 = re.sub("[^0-9a-zA-Z,' ']", "",st0)
+    no_good_string =[' hd','hd ','official','video']
+    for bad in no_good_string:
+        st1 =st1.replace(bad,'')
+    st2 =st1
+    # remove all space long then 1
+    while '  ' in st2:
+        st2 = st2.replace("  ", " ")
+    
+    if len(st2)<2:  #not english
+        st22=st0
+        st22 = st22.replace("-", "")
+        st22 = st22.replace(":", "")
+        st22 = st22.replace("@", "")
+        st22 = st22.replace("#", "")
+        while '  ' in st22:
+            st22 = st22.replace("  ", " ")
+        st2 = st22
+        
+    while st2[-1]==' ':
+        st2=st2[:-1]
+    
+    # replace space with '_'
+    st3 = st2.replace("_", "") # to prevent double '_'
+    st3 = st3.replace(" ", "_")
+
+    return st3
+
+def restart_index_data(path):
+    columns_name=['name',
+              'len',
+              'frane_time', #[sec]
+              'number of farme',
+              'number of bit',
+              'url',
+              'path_mp4',
+              'path_wav',
+              'path_sound_np',
+              'path_video_np']
+    index_data = pd.DataFrame(columns=columns_name).set_index('name')
+    index_data.to_csv(path)
+
+def new_data(name,path):
+    df1 = pd.read_csv(path_index_data).set_index('name')
+    df2 = pd.DataFrame([name],columns=['name']).set_index('name')
+    df1 = df1.append(df2)
+    df1.to_csv(path)
+    
+st_in = 'ברי סחרוף - רעש לבן'#'ADG_ KI  IJOE o12pHLive Official'
+print(st_in)
+print(fix_string(st_in)+'!')
 
 
+path_index_data = r'D:\github\video_to_sound\video_to_sound\data\index_all_data.csv'
+#restart_index_data(path_index_data)
+new_data('tr',path_index_data)
 # First create some toy data:
 x = np.linspace(5, 12, 13-5)
 f = lambda t:t
@@ -96,45 +154,3 @@ y = f(x)
 # start = 2*np.pi 
 # end = 4*np.pi
 # print(pirmid_integral(x,y,start,end))
-out = cut_sig_to_win(y,6,2)
-print(out)
-print('new')
-out = cut_sig_to_win2(y,7,4)
-print(out)
-# start = 0
-# end = 2*np.pi
-# print(pirmid_integral(x,y,start,end))
-ans = mel_filter(x,y,number_filter = 200)
-#print(ans[-1])
-#print(y[-1])
-# # Create just a figure and only one subplot
-# fig, ax = plt.subplots()
-# ax.plot(x, y)
-# ax.set_title('Simple plot')
-
-# Create two subplots and unpack the output array immediately
-f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
-ax1.plot(x, y)
-ax1.set_title('Sharing Y axis')
-ax2.scatter(x, y)
-
-# # Create four polar axes and access them through the returned array
-# fig, axs = plt.subplots(2, 2, subplot_kw=dict(projection="polar"))
-# axs[0, 0].plot(x, y)
-# axs[1, 1].scatter(x, y)
-
-# # Share a X axis with each column of subplots
-# plt.subplots(2, 2, sharex='col')
-
-# # Share a Y axis with each row of subplots
-# plt.subplots(2, 2, sharey='row')
-
-# # Share both X and Y axes with all subplots
-# plt.subplots(2, 2, sharex='all', sharey='all')
-
-# # Note that this is the same as
-# plt.subplots(2, 2, sharex=True, sharey=True)
-
-# # Create figure number 10 with a single subplot
-# # and clears it if it already exists.
-# fig, ax = plt.subplots(num=10, clear=True)
