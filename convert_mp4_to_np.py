@@ -111,7 +111,8 @@ def restart_index_data(path):
                   'path_mp4',
                   'path_wav',
                   'path_sound_np',
-                  'path_video_np']
+                  'path_video_np',
+                  'error']
     
     index_data = pd.DataFrame(columns=columns_name).set_index('name')
     index_data.to_csv(path)
@@ -122,7 +123,7 @@ def new_data(name,old_name,path):
         print('erorr!! song name is in data frame')
         print('!!!!!!!!!!!!!!!!')
         return True,np.nan
-    df2 = pd.DataFrame([[name,old_name]],columns=['name','old_name']).set_index('name')
+    df2 = pd.DataFrame([[name,old_name,True]],columns=['name','old_name','error']).set_index('name')
     df1 = df1.append(df2)
     df1.to_csv(path)
     return False,df1
@@ -144,7 +145,7 @@ phath_for_np_video = main_phath+r'\data\np_video'
 dim =(128,72)  # dim of frame
 
 
-#restart_index_data(phath_to_index_data)
+restart_index_data(phath_to_index_data)
 video_raw_list_name = os.listdir(phath_for_mp4_video)
 for file_name in video_raw_list_name:
     # clean song name from char 'Brit go H;Ome'=> 'brit_go_home'
@@ -166,17 +167,23 @@ for file_name in video_raw_list_name:
     # test if mp3 in folder
     if (file_name_r+'.mp3') not in os.listdir(phath_for_mp3_sound):
         print('no mp3 file')
-        video_clip = VideoFileClip(file_in_phath)
-        audio_clip = video_clip.audio
-        audio_clip.write_audiofile(sound_mp3_phath)
-    
+        try:
+            video_clip = VideoFileClip(file_in_phath)
+            audio_clip = video_clip.audio
+            audio_clip.write_audiofile(sound_mp3_phath)
+        except:
+            print('error rading cap to mp3')
+            continue
+        
     # test if wav in folder
     if (file_name_r+'.wav') not in os.listdir(phath_for_wav_sound):
         print('no wav file')
-        temp_proc = subprocess.call(['ffmpeg', '-i', sound_mp3_phath,sound_wav_phath],shell=True)
-        
-        #print(type(temp_proc))
-        #temp_proc.kill()
+        try:
+            temp_proc = subprocess.call(['ffmpeg', '-i', sound_mp3_phath,sound_wav_phath],shell=True)
+        except:
+            print('error converting mp3 to wav')
+            continue
+       
         
     # parameters for converting wav to vector
     sampling_rate = 32768  # [Hz]  2^15
@@ -268,6 +275,7 @@ for file_name in video_raw_list_name:
     data_index.at[file_name_r,'number of farme'] = numpy_video.shape[0]
     data_index.at[file_name_r,'frame for sec'] = np.ceil(
         data_index.at[file_name_r,'number of farme']/data_index.at[file_name_r,'len[sec]']).astype(int)
+    data_index.at[file_name_r,'error'] = False
     data_index.to_csv(phath_to_index_data)   
     
 

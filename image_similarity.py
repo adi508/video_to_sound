@@ -59,16 +59,17 @@ v_ker_mean = np.vectorize(ker_mean,excluded=['img'])
 
 def crop_img_mean(img,p=3,grid=9,padding=1):
     w,h = img.shape
-    step_w = (w-2*padding-p)//(grid-1)
-    step_h = (h-2*padding-p)//(grid-1)
-    index_w = np.expand_dims(np.arange(padding,1+w-padding-p,step_w),axis=-1)   
-
-    index_h = np.expand_dims(np.arange(padding,1+h-padding-p,step_h),axis=0)
-
+    step_w = (w-padding-p)//(grid)
+    step_h = (h-padding-p)//(grid)
+    index_w = np.expand_dims(np.arange(padding,w-padding-p,step_w),axis=-1)   
+    print(w,h,p,padding)
+    index_h = np.expand_dims(np.arange(padding,h-padding-p,step_h),axis=0)
+    print(index_w.shape,index_h.shape)
+    print(index_w,index_h)
     index_h1,index_w1 = np.meshgrid(index_h,index_w)
     index_w1 =index_w1.flatten()
     index_h1 =index_h1.flatten()
-    #print(index_w1,index_h1)
+    print(index_w1.shape,index_h1.shape)
     out1 = v_ker_mean(img = img,x0=index_h1,y0=index_w1,p=p)
     out1 = out1.reshape((grid,grid))
     return out1
