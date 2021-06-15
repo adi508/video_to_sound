@@ -9,6 +9,7 @@ import re
 import matplotlib.pyplot as plt
 import pandas as pd
 import subprocess
+import image_similarity
 
 def pyramid_pass_sum(vx_in,vy_in,start,end):
     # find index of start point and end point
@@ -140,19 +141,16 @@ def new_data(name,path):
     df1 = df1.append(df2)
     df1.to_csv(path)
     
-st_in = 'ברי סחרוף - רעש לבן'#'ADG_ KI  IJOE o12pHLive Official'
-print(st_in)
-print(fix_string(st_in)+'!')
 
-subprocess.run('dir',shell=True)
+img1 = image_similarity.my_image(np.random.randint(0,255,size =(100,100)))
 
-path_index_data = r'D:\github\video_to_sound\video_to_sound\data\index_all_data.csv'
-#restart_index_data(path_index_data)
-new_data('tr',path_index_data)
-# First create some toy data:
-x = np.linspace(5, 12, 13-5)
-f = lambda t:t
-y = f(x)
-# start = 2*np.pi 
-# end = 4*np.pi
-# print(pirmid_integral(x,y,start,end))
+img2 = image_similarity.my_image(np.random.randint(0,255,size =(100,100)))
+
+
+
+# img_test.index_v1()
+
+#img_test = np.ones((3,3))
+#print(img_dist_full(img_test))
+print(image_similarity.similarity(img1,img2))
+print(image_similarity.similarity(img2,img2))
