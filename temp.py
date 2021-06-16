@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import subprocess
 import image_similarity
+import cv2
 
 def pyramid_pass_sum(vx_in,vy_in,start,end):
     # find index of start point and end point
@@ -142,11 +143,19 @@ def new_data(name,path):
     df1.to_csv(path)
     
 
-img1 = image_similarity.my_image(np.random.randint(0,255,size =(100,100)))
+img1 = np.random.randint(0,255,size =(100,100))
 
-img2 = image_similarity.my_image(np.random.randint(0,255,size =(100,100)))
+img2 = np.random.randint(0,255,size =(100,100))
 
-
+while(1):
+    cv2.imshow('img',img2)
+    k = cv2.waitKey(1)
+    if k==27:    # Esc key to stop
+        break
+    elif k==-1:  # normally -1 returned,so don't print it
+        continue
+    else:
+        print (k) # else print its value
 
 # img_test.index_v1()
 
