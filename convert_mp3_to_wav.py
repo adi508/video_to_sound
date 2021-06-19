@@ -4,17 +4,14 @@ Created on Sat Jun 19 13:24:24 2021
 
 @author: Adi
 """
-import cv2
 import numpy as np
 import os
 import librosa
-from scipy.io import wavfile
-import matplotlib.pyplot as plt
 import re
-from moviepy.editor import *
 import subprocess
 import pandas as pd
-# import ffmpeg
+from tinytag import TinyTag
+import sound_similarity
 
 def fix_string(st_in):
     # only lower case
@@ -24,6 +21,9 @@ def fix_string(st_in):
     for bad in no_good_string:
         st1 =st1.replace(bad,'')
     st2 =st1
+    st2 = st2.replace(",", "")
+    st2 = st2.replace(".", "")
+    st2 = st2.replace("'", "")
     # remove all space long then 1
     while '  ' in st2:
         st2 = st2.replace("  ", " ")
@@ -34,6 +34,10 @@ def fix_string(st_in):
         st22 = st22.replace(":", "")
         st22 = st22.replace("@", "")
         st22 = st22.replace("#", "")
+        st22 = st22.replace(",", "")
+        st22 = st22.replace(".", "")
+        st22 = st22.replace("'", "")
+        
         while '  ' in st22:
             st22 = st22.replace("  ", " ")
         st2 = st22
@@ -59,7 +63,9 @@ def restart_index_sound_data(path):
                   'len[sec]',
                   'number of bit',
                   'bit for sec',
-                  'frame for sec',
+                  'artist',
+                  'title',
+                  'albume',
                   'path_wav',
                   'path_sound_np',
                   'no missing data']
@@ -80,41 +86,54 @@ def new_sound_data(name,old_name,path):
 main_phath =r'D:\github\video_to_sound\video_to_sound'
 
 # path for file
-phath_to_index_data = main_phath+r'\data\index_sound_data.csv'
+phath_to_index_sound_data = main_phath+r'\data\data_sound_sim\index_sound_data.csv'
 
 # path for folder
-phath_for_mp3_sound = main_phath+r'\data\mp3_sound2'
-phath_for_wav_sound = main_phath+r'\data\wav_sound2'
-phath_for_np_sound = main_phath+r'\data\np_sound2'
+phath_for_mp3_sound = main_phath+r'\data\data_sound_sim\mp3_sound2'
+phath_for_wav_sound = main_phath+r'\data\data_sound_sim\wav_sound2'
+phath_for_np_sound = main_phath+r'\data\data_sound_sim\np_sound2'
 
 
 # parameter for procesing
 
 
+mp3_file = os.listdir(phath_for_mp3_sound)
 
-restart_index_video_data(phath_to_index_data)
-video_raw_list_name = os.listdir(phath_for_mp3_sound)
+mp3_file  = pd.read_csv(phath_to_index_sound_data)['name'].tolist()
 
-for file_name in video_raw_list_name: # loop on video in folder "raw_video"
+for file_name in mp3_file: # loop on video in folder "raw_video"
     # clean song name from char 'Brit go H;Ome'=> 'brit_go_home'
-    file_name_r = fix_string(file_name[:-4])
+    print('------')
+    print(file_name[:-4])
+    #file_name_r = fix_string(file_name[:-4])
+    file_name_r = file_name
+    print(file_name_r)
     print('-------new song:',file_name_r)
     # load index_data (pandas datafram) try to add new song name
-    flag_name,data_index = new_video_data(file_name_r,file_name[:-4],phath_to_index_data)
+    
+    sound_mp3_phath = phath_for_mp3_sound+'\\'+file_name
+    print('sound_mp3_phath',sound_mp3_phath)
+    
+    
+    flag_name,data_index = new_sound_data(file_name_r,file_name[:-4],phath_to_index_sound_data)
     if flag_name and data_index.at[file_name_r,'no missing data'] : #if name in data, move to next song
         print('song in data, no misissing data, move to next song')
+        os.remove(sound_mp3_phath)
         continue
     
     # all name+path of new file
-    sound_mp3_phath = phath_for_mp3_sound+'\\'+file_name_r+'.mp3'
+   
     sound_wav_phath = phath_for_wav_sound+'\\'+file_name_r+'.wav'
+    print('sound_wav_phath',sound_wav_phath)
     sound_np_phath = phath_for_np_sound+'\\'+file_name_r+'.npy'
-    video_np_phath = phath_for_np_video+'\\'+file_name_r+'.npy'
-  
+    print('sound_np_phath',sound_np_phath)
+    print('--------------------start---------------')
     # test if wav in folder
     if (file_name_r+'.wav') not in os.listdir(phath_for_wav_sound):
         print('no wav file')
         try:
+            print(sound_mp3_phath)
+            print(sound_wav_phath)
             temp_proc = subprocess.call(['ffmpeg', '-i', sound_mp3_phath,sound_wav_phath],shell=True)
             print('convert mp3 to wav')
         except:
@@ -128,6 +147,7 @@ for file_name in video_raw_list_name: # loop on video in folder "raw_video"
     # test if np sound in folder
     if (file_name_r+'.npy') not in os.listdir(phath_for_np_sound):
         print('no numpy sound file in folder')
+        print(sound_wav_phath)
         (sig, rate) = librosa.load(sound_wav_phath, sr=sampling_rate)
         np.save(sound_np_phath,  sig)
         print('convert wav file to numpy')
@@ -137,14 +157,49 @@ for file_name in video_raw_list_name: # loop on video in folder "raw_video"
         rate = sampling_rate
         sig = np.load(sound_np_phath)
     
-    data_index.at[file_name_r,'path_wav'] = sound_wav_phath
-    data_index.at[file_name_r,'number of bit'] = len(sig)
-    data_index.at[file_name_r,'len[sec]'] = librosa.get_duration(y=sig, sr=rate)
-    data_index.at[file_name_r,'bit for sec'] = len(sig)/data_index.at[file_name_r,'len[sec]']
-    data_index.at[file_name_r,'path_sound_np'] = sound_np_phath
+    #tag = TinyTag.get(sound_mp3_phath)
 
-    data_index.to_csv(phath_to_index_data)
-
+    
+    #data_index.at[file_name_r,'number of bit'] = len(sig)
+    #data_index.at[file_name_r,'len[sec]'] = tag.duration
+    #data_index.at[file_name_r,'bit for sec'] = len(sig)/data_index.at[file_name_r,'len[sec]']
+    #try :
+        #data_index.at[file_name_r,'artist'] = fix_string(tag.artist)
+        #data_index.at[file_name_r,'title'] = fix_string(tag.title)
+        #data_index.at[file_name_r,'albume'] = fix_string(tag.album)
+        
+    #except:
+        #pass
+    
+    #data_index.at[file_name_r,'path_sound_np'] = sound_np_phath
+    #data_index.at[file_name_r,'path_wav'] = sound_wav_phath
+    print('1')
+    grid = 180
+    if data_index.at[file_name_r,'len[sec]'] > 180:
+        print('2')
+        len_to_index = int(data_index.at[file_name_r,'number of bit']*(180/data_index.at[file_name_r,'len[sec]']))
+        sig1 = sig[:len_to_index]
+        
+    else:
+        print('1')
+        sig1 = np.zeros(180)
+        sig1[:data_index.at[file_name_r,'number of bit']] = sig
+    
+    print('2')
+    p1 = int( (0.3*data_index.at[file_name_r,'number of bit'])//grid)
+    print('3')
+    v1 = sound_similarity.crop_sig_mean(sig1,p=p1,grid=grid,padding=0)
+    print('4')
+    #print(v2)
+    index1 = sound_similarity.sig_dist_full(v1)
+    print('5')
+    data_index.at[file_name_r,'index3min'] = v1
+    print('1')
+    data_index.at[file_name_r,'no missing data'] = True
+    print('1')
+    data_index.to_csv(phath_to_index_sound_data)
+    print('1')
+    os.remove(sound_mp3_phath)
 
 
     
