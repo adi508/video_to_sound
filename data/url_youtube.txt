@@ -37,5 +37,7 @@
 "https://www.youtube.com/watch?v=sOS9aOIXPEk&ab_channel=WarnerMusicFranceWarnerMusicFrance",
 "https://www.youtube.com/watch?v=04mfKJWDSzI&ab_channel=GorillazGorillaz",
 "https://www.youtube.com/watch?v=HyHNuVaZJ-k&ab_channel=GorillazGorillazOfficialArtistChannel",
-"https://www.youtube.com/watch?v=N3oCS85HvpY&t=1s&ab_channel=i%27mcyborgbutthat%27sok"
+"https://www.youtube.com/watch?v=N3oCS85HvpY&t=1s&ab_channel=i%27mcyborgbutthat%27sok",
+"https://www.youtube.com/watch?v=BuJDaOVz2qY&ab_channel=Dr.DreDr.DreOfficialArtistChannel",
+
 ]
