@@ -1,4 +1,4 @@
-["https://www.youtube.com/watch?v=4jZBwyG7HPs&list=RDGMEMJQXQAmqrnmK1SEjY_rKBGAVM4jZBwyG7HPs&start_radio=1",
+"https://www.youtube.com/watch?v=4jZBwyG7HPs&list=RDGMEMJQXQAmqrnmK1SEjY_rKBGAVM4jZBwyG7HPs&start_radio=1",
 "https://www.youtube.com/watch?v=4vvBAONkYwI&ab_channel=BritneySpearsBritneySpears",
 "https://www.youtube.com/watch?v=IxGvm6btP1A&ab_channel=KanyeWestKanyeWestOfficialArtistChannel",
 "https://www.youtube.com/watch?v=LQ488QrqGE4&ab_channel=KanyeWestKanyeWestOfficialArtistChannel",
@@ -39,5 +39,3 @@
 "https://www.youtube.com/watch?v=HyHNuVaZJ-k&ab_channel=GorillazGorillazOfficialArtistChannel",
 "https://www.youtube.com/watch?v=N3oCS85HvpY&t=1s&ab_channel=i%27mcyborgbutthat%27sok",
 "https://www.youtube.com/watch?v=BuJDaOVz2qY&ab_channel=Dr.DreDr.DreOfficialArtistChannel",
-
-]

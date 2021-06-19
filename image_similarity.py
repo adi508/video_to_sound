@@ -150,7 +150,9 @@ def main():
 
 #main()
 
-
+print('upload image_similarity...')
+print('    main function : similarity(img1,img2,grid)')
+print('    main class: My_image(img) ')
 
 
 

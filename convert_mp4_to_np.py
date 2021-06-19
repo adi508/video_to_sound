@@ -99,7 +99,7 @@ def fft_np(sig,sr):
     out = np.abs(np.fft.rfft(y)/n)
     return out,freq    
 
-def restart_index_data(path):
+def restart_index_video_data(path):
     columns_name=['name',
                   'old_name',
                   'len[sec]',
@@ -112,7 +112,7 @@ def restart_index_data(path):
                   'path_wav',
                   'path_sound_np',
                   'path_video_np',
-                  'error']
+                  'no missing data']
     
     index_data = pd.DataFrame(columns=columns_name).set_index('name')
     index_data.to_csv(path)
@@ -120,10 +120,9 @@ def restart_index_data(path):
 def new_data(name,old_name,path):
     df1 = pd.read_csv(path).set_index('name')
     if name in df1.index:
-        print('erorr!! song name is in data frame')
-        print('!!!!!!!!!!!!!!!!')
-        return True,np.nan
-    df2 = pd.DataFrame([[name,old_name,True]],columns=['name','old_name','error']).set_index('name')
+        print('song name is in data frame')
+        return True ,df1
+    df2 = pd.DataFrame([[name,old_name,False]],columns=['name','old_name','no missing data']).set_index('name')
     df1 = df1.append(df2)
     df1.to_csv(path)
     return False,df1
@@ -132,7 +131,7 @@ main_phath =r'D:\github\video_to_sound\video_to_sound'
 
 # path for file
 phath_for_url = main_phath+r'\data\url_youtube.txt'
-phath_to_index_data = main_phath+r'\data\index_all_data.csv'
+phath_to_index_data = main_phath+r'\data\index_video_data.csv'
 
 # path for folder
 phath_for_mp4_video = main_phath+r'\data\raw_video'
@@ -145,16 +144,17 @@ phath_for_np_video = main_phath+r'\data\np_video'
 dim =(128,72)  # dim of frame
 
 
-restart_index_data(phath_to_index_data)
+#restart_index_video_data(phath_to_index_data)
 video_raw_list_name = os.listdir(phath_for_mp4_video)
-for file_name in video_raw_list_name:
+
+for file_name in video_raw_list_name: # loop on video in folder "raw_video"
     # clean song name from char 'Brit go H;Ome'=> 'brit_go_home'
     file_name_r = fix_string(file_name[:-4])
     print('-------new song:',file_name_r)
     # load index_data (pandas datafram) try to add new song name
     flag_name,data_index = new_data(file_name_r,file_name[:-4],phath_to_index_data)
-    if flag_name: #if name in data, move to next song
-        print('song in data, move to next song')
+    if flag_name and data_index.at[file_name_r,'no missing data'] : #if name in data, move to next song
+        print('song in data, no misissing data, move to next song')
         continue
     
     # all name+path of new file
@@ -171,6 +171,7 @@ for file_name in video_raw_list_name:
             video_clip = VideoFileClip(file_in_phath)
             audio_clip = video_clip.audio
             audio_clip.write_audiofile(sound_mp3_phath)
+            print('dowload mp3 file')
         except:
             print('error rading cap to mp3')
             continue
@@ -180,6 +181,7 @@ for file_name in video_raw_list_name:
         print('no wav file')
         try:
             temp_proc = subprocess.call(['ffmpeg', '-i', sound_mp3_phath,sound_wav_phath],shell=True)
+            print('convert mp3 to wav')
         except:
             print('error converting mp3 to wav')
             continue
@@ -191,12 +193,13 @@ for file_name in video_raw_list_name:
     
     # test if np sound in folder
     if (file_name_r+'.npy') not in os.listdir(phath_for_np_sound):
-        print('no NP sound file in folder')
+        print('no numpy sound file in folder')
         (sig, rate) = librosa.load(sound_wav_phath, sr=sampling_rate)
         np.save(sound_np_phath,  sig)
+        print('convert wav file to numpy')
         
     else:
-        print('NP sound file exsist')
+        print('numpy sound file exists')
         rate = sampling_rate
         sig = np.load(sound_np_phath)
     
@@ -208,7 +211,7 @@ for file_name in video_raw_list_name:
     data_index.at[file_name_r,'path_sound_np'] = sound_np_phath
 
     data_index.to_csv(phath_to_index_data)
-    
+    """
     # plot signal [amp/bit]
     max_sig = np.max(sig)
     min_sig = np.min(sig)
@@ -219,10 +222,10 @@ for file_name in video_raw_list_name:
     data = np.array([np.arange(len(sig_s)),sig_s]).T
     df_temp = pd.DataFrame(data,columns=['bit', 'amp'])
     ax1 = df_temp.plot.scatter(x='bit', y='amp', c='DarkBlue')
-    
+    """
     # test if np video in folder
     if (file_name_r+'.npy') not in os.listdir(phath_for_np_video):
-        print('no NP video file in folder') 
+        print('no numpy video file in folder') 
         # convert mp4 to 3D numpy array [w,h,t] in black and white
         cap = cv2.VideoCapture(file_in_phath)
         counter = 1  #number of farme convert to 3D numpy array
@@ -268,14 +271,14 @@ for file_name in video_raw_list_name:
 
         np.save(video_np_phath,  numpy_video)    
     else:
-        print('np sound file exsist')
+        print('numpy sound file exists')
         numpy_video = np.load(video_np_phath)
     
     data_index.at[file_name_r,'path_video_np'] = video_np_phath
     data_index.at[file_name_r,'number of farme'] = numpy_video.shape[0]
     data_index.at[file_name_r,'frame for sec'] = np.ceil(
         data_index.at[file_name_r,'number of farme']/data_index.at[file_name_r,'len[sec]']).astype(int)
-    data_index.at[file_name_r,'error'] = False
+    data_index.at[file_name_r,'no missing data'] = True
     data_index.to_csv(phath_to_index_data)   
     
 

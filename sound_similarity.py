@@ -113,15 +113,17 @@ def sig_dist_full(sig5):
 
 
 def main():
+    
     sig1 = np.random.randint(0,255,size =(128*24))
     sig2 = np.random.randint(0,255,size =(128*24))
     print('hiiiiiiiiiiiiii????')
     print(similarity_sig(sig1,24,sig2,24,15))
     
 
-main()
-
-
+#main()
+print('upload sound_similarity...')
+print('    main function : similarity_sig(sig1,per_sec1,sig2,per_sec2,grid)')
+print('    main class: My_sound(sig,per_sec) ')
 
 
 
