@@ -117,7 +117,7 @@ def restart_index_video_data(path):
     index_data = pd.DataFrame(columns=columns_name).set_index('name')
     index_data.to_csv(path)
 
-def new_data(name,old_name,path):
+def new_video_data(name,old_name,path):
     df1 = pd.read_csv(path).set_index('name')
     if name in df1.index:
         print('song name is in data frame')
@@ -152,7 +152,7 @@ for file_name in video_raw_list_name: # loop on video in folder "raw_video"
     file_name_r = fix_string(file_name[:-4])
     print('-------new song:',file_name_r)
     # load index_data (pandas datafram) try to add new song name
-    flag_name,data_index = new_data(file_name_r,file_name[:-4],phath_to_index_data)
+    flag_name,data_index = new_video_data(file_name_r,file_name[:-4],phath_to_index_data)
     if flag_name and data_index.at[file_name_r,'no missing data'] : #if name in data, move to next song
         print('song in data, no misissing data, move to next song')
         continue
